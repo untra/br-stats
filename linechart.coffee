@@ -4,10 +4,11 @@ $(document).ready ->
     RIGHT: 80
     BOTTOM: 30
     LEFT: 50
-  WIDTH = 960 - (MARGIN.LEFT) - (MARGIN.RIGHT)
-  HEIGHT = 500 - (MARGIN.TOP) - (MARGIN.BOTTOM)
-  UPLOADS = 4
-  RANKS = 61
+  WIDTH = 1370 - (MARGIN.LEFT) - (MARGIN.RIGHT)
+  HEIGHT = 750 - (MARGIN.TOP) - (MARGIN.BOTTOM)
+  TURNS = 70
+  UPLOADS = 3
+  PLAYERS = 61
   X = d3.scale.linear()
   .range([
     0
@@ -15,7 +16,7 @@ $(document).ready ->
   ])
   .domain([
     0,
-    UPLOADS
+    TURNS
   ])
   Y = d3.scale.linear()
   .range([
@@ -23,12 +24,9 @@ $(document).ready ->
     0
   ])
   .domain([
-    1,
-    RANKS
+    PLAYERS
+    1
   ])
-  self= @
-  xAxis = d3.svg.axis().scale(X).orient('bottom')
-  yAxis = d3.svg.axis().scale(Y).orient('left')
   console.log "'Sup kid. Good on you for looking at the console. Doesn't say much, but it means you care. <3 untra"
 
   svg = d3.select('#linechart').append('svg')
@@ -36,14 +34,10 @@ $(document).ready ->
   .attr('height', HEIGHT + MARGIN.TOP + MARGIN.BOTTOM)
   .append('g').attr('transform', 'translate(' + MARGIN.LEFT + ',' + MARGIN.TOP + ')')
 
-  datapoints = [
-    'civs.csv'
-    'civs.csv'
-    'civs.csv'
-  ]
   rankings = {}
   civdata = {}
   civs = []
+  indices = []
   remaining = 2
 
   to_hash = (data, name) ->
@@ -58,19 +52,89 @@ $(document).ready ->
       arr[i] = d[name]
     arr
 
+  to_numbers = (data) ->
+    arr = []
+    for d,i in data
+      console.log +d
+      arr.push +d unless isNaN parseInt +d
+    arr
+
+  path = (d) ->
+    indices.map((p) ->
+      [
+        X(p)
+        Y(d[p])
+      ]
+    )
+
+  hoverformat = (d) ->
+
+
   initalize = ->
+    line = d3.svg.line()
+    xAxis = d3.svg.axis().scale(X).orient('bottom').tickValues(indices).tickSubdivide(0)
+    yAxis = d3.svg.axis().scale(Y).orient('left').ticks(PLAYERS)
     console.log '------------'
     console.log civs
     console.log rankings
-    svg.append("g")
-    .attr("class", "x axis")
-    .attr("transform", "translate(0," + HEIGHT + ")")
-    .call(xAxis);
+    axes = svg.append("g")
+      .attr("class", "axes")
 
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
+    yaxis = axes.append("g")
+      .attr("class", "axis")
+      .attr("transform", "translate(0," + HEIGHT + ")")
+      .call(xAxis);
 
+    xaxis = axes.append("g")
+      .attr("class", "axis")
+      .call(yAxis)
+
+    xaxis.selectAll '.tick line'
+      .attr 'x2', (d) ->
+        WIDTH
+
+    yaxis.selectAll '.tick line'
+      .attr 'y1', 0
+      .attr 'y2', -HEIGHT
+
+    civlines = svg.selectAll '.civlines'
+      .data rankings
+      .enter().append('g')
+
+    civlines.append('path')
+      .attr 'class', 'line'
+      .attr 'd', (d) ->
+        line path d
+      .style 'stroke', (d) ->
+        civdata[d.name].primary
+
+    circles = civlines.selectAll('circle')
+      .data rankings
+      .enter().append 'g'
+
+    for i in indices
+      console.log i
+      circles.append 'circle'
+        .attr 'cx', (d) ->
+          X(i)
+        .attr 'cy', (d) ->
+          Y(d[i])
+        .attr 'r', 4
+        .style 'fill', (d) ->
+          civdata[d.name].secondary
+        .style 'stroke', (d) ->
+          civdata[d.name].primary
+        .on('mouseover', (d) ->
+          x = +(d3.select(this).attr 'cx')
+          y = +(d3.select(this).attr 'cy')
+          d3.select(this.parentNode).append 'text'
+          .attr 'x', x + 10
+          .attr 'y', y + 4
+          .text d.name
+          return
+        ).on 'mouseout', (d) ->
+          selection = d3.select(this.parentNode).selectAll('text').remove()
+          return
 
   #load the data. runs asynchronously, so whoever finishes first calls initialize
   d3.csv 'civs.csv', (data) ->
@@ -80,5 +144,6 @@ $(document).ready ->
 
   d3.csv 'rankings.csv', (data) =>
     rankings = data
+    indices = to_numbers Object.keys data[0]
     initalize() if (!--remaining)
 return
