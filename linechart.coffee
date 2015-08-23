@@ -55,7 +55,6 @@ $(document).ready ->
   to_numbers = (data) ->
     arr = []
     for d,i in data
-      console.log +d
       arr.push +d unless isNaN parseInt +d
     arr
 
@@ -74,9 +73,6 @@ $(document).ready ->
     line = d3.svg.line()
     xAxis = d3.svg.axis().scale(X).orient('bottom').tickValues(indices).tickSubdivide(0)
     yAxis = d3.svg.axis().scale(Y).orient('left').ticks(PLAYERS)
-    console.log '------------'
-    console.log civs
-    console.log rankings
     axes = svg.append("g")
       .attr("class", "axes")
 
@@ -113,7 +109,6 @@ $(document).ready ->
       .enter().append 'g'
 
     for i in indices
-      console.log i
       circles.append 'circle'
         .attr 'cx', (d) ->
           X(i)

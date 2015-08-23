@@ -45,7 +45,6 @@
       arr = [];
       for (i = j = 0, len = data.length; j < len; i = ++j) {
         d = data[i];
-        console.log(+d);
         if (!isNaN(parseInt(+d))) {
           arr.push(+d);
         }
@@ -63,9 +62,6 @@
       line = d3.svg.line();
       xAxis = d3.svg.axis().scale(X).orient('bottom').tickValues(indices).tickSubdivide(0);
       yAxis = d3.svg.axis().scale(Y).orient('left').ticks(PLAYERS);
-      console.log('------------');
-      console.log(civs);
-      console.log(rankings);
       axes = svg.append("g").attr("class", "axes");
       yaxis = axes.append("g").attr("class", "axis").attr("transform", "translate(0," + HEIGHT + ")").call(xAxis);
       xaxis = axes.append("g").attr("class", "axis").call(yAxis);
@@ -83,7 +79,6 @@
       results = [];
       for (j = 0, len = indices.length; j < len; j++) {
         i = indices[j];
-        console.log(i);
         results.push(circles.append('circle').attr('cx', function(d) {
           return X(i);
         }).attr('cy', function(d) {
