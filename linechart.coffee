@@ -41,29 +41,44 @@ $(document).ready ->
     'civs.csv'
     'civs.csv'
   ]
-  rankings = []
+  rankings = {}
   civdata = {}
   civs = []
+  remaining = 2
 
   to_hash = (data, name) ->
     hash = {}
     for d in data
       hash[d[name]] = d
-    console.log hash
     hash
+
+  to_array = (data, name) ->
+    arr = []
+    for d,i in data
+      arr[i] = d[name]
+    arr
 
   initalize = ->
     console.log '------------'
     console.log civs
+    console.log rankings
+    svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + HEIGHT + ")")
+    .call(xAxis);
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
 
 
-
-
-  #load the data and go
+  #load the data. runs asynchronously, so whoever finishes first calls initialize
   d3.csv 'civs.csv', (data) ->
-    d3.csv 'rankings.csv', (data) ->
-      rankings = data
-    civs = to_hash data 'name'
-    initalize()
-  return
+    civdata = to_hash(data, 'name')
+    civs = to_array(data, 'name')
+    initalize() if (!--remaining)
+
+  d3.csv 'rankings.csv', (data) =>
+    rankings = data
+    initalize() if (!--remaining)
 return
