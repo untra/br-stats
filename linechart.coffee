@@ -14,10 +14,6 @@ $(document).ready ->
     0
     WIDTH
   ])
-  .domain([
-    0,
-    TURNS
-  ])
   Y = d3.scale.linear()
   .range([
     HEIGHT
@@ -39,6 +35,8 @@ $(document).ready ->
   civs = []
   indices = []
   remaining = 2
+  toggle = null
+  civlines = null
 
   to_hash = (data, name) ->
     hash = {}
@@ -66,10 +64,21 @@ $(document).ready ->
       ]
     )
 
-  hoverformat = (d) ->
+  hoverformat = (d, i) ->
+    "\##{d[i]} #{d.name}"
 
+  change = (d) ->
+    checked = toggle.select("[name=#{d.name}]").property 'checked'
+    value = if checked then null else 'hidden'
+    lines = civlines.filter (p) ->
+      p.name == d.name
+    lines.style 'visibility', value
 
   initalize = ->
+    X.domain([
+        0,
+        TURNS
+      ])
     line = d3.svg.line()
     xAxis = d3.svg.axis().scale(X).orient('bottom').tickValues(indices).tickSubdivide(0)
     yAxis = d3.svg.axis().scale(Y).orient('left').ticks(PLAYERS)
@@ -85,6 +94,7 @@ $(document).ready ->
       .attr("class", "axis")
       .call(yAxis)
 
+    # extend the axes
     xaxis.selectAll '.tick line'
       .attr 'x2', (d) ->
         WIDTH
@@ -93,9 +103,13 @@ $(document).ready ->
       .attr 'y1', 0
       .attr 'y2', -HEIGHT
 
-    civlines = svg.selectAll '.civlines'
+    civlines = svg.append 'g'
+      .attr 'class', 'civlines'
+      .selectAll 'g'
       .data rankings
-      .enter().append('g')
+      .enter().append 'g'
+      .attr 'name', (d) ->
+        d.name
 
     civlines.append('path')
       .attr 'class', 'line'
@@ -104,12 +118,8 @@ $(document).ready ->
       .style 'stroke', (d) ->
         civdata[d.name].primary
 
-    circles = civlines.selectAll('circle')
-      .data rankings
-      .enter().append 'g'
-
     for i in indices
-      circles.append 'circle'
+      civlines.append 'circle'
         .attr 'cx', (d) ->
           X(i)
         .attr 'cy', (d) ->
@@ -125,14 +135,35 @@ $(document).ready ->
           d3.select(this.parentNode).append 'text'
           .attr 'x', x + 10
           .attr 'y', y + 4
-          .text d.name
+          .text hoverformat d, i
           return
         ).on 'mouseout', (d) ->
           selection = d3.select(this.parentNode).selectAll('text').remove()
           return
 
-  #load the data. runs asynchronously, so whoever finishes first calls initialize
+    toggle.append 'input'
+    .attr 'type', 'checkbox'
+    .property 'checked', true
+    .attr 'name', (d) ->
+      d.name
+    .on 'change', (d) ->
+      change d
+
+    toggle.append 'img'
+    .attr 'src', (d) ->
+      d.flair
+    .attr 'title', (d) ->
+      d.name
+    .attr 'width', 32
+    .attr 'height',32
+
+
+  #load the data. Runs asynchronously, so whoever finishes first calls initialize
   d3.csv 'civs.csv', (data) ->
+    toggle = d3.select('#civtoggle')
+      .selectAll 'label'
+      .data data
+      .enter().append 'label'
     civdata = to_hash(data, 'name')
     civs = to_array(data, 'name')
     initalize() if (!--remaining)
@@ -140,5 +171,6 @@ $(document).ready ->
   d3.csv 'rankings.csv', (data) =>
     rankings = data
     indices = to_numbers Object.keys data[0]
+    TURNS = d3.max indices
     initalize() if (!--remaining)
 return
